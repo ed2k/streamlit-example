@@ -5,7 +5,7 @@ streamlit
 #absl
 numpy
 open_spiel
-haiku
+#haiku
 jax
 
 
