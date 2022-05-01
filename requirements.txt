@@ -1,3 +1,10 @@
 altair
 pandas
 streamlit
+
+absl
+numpy
+haiku
+jax
+open_spiel
+pyspiel
