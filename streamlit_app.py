@@ -4,60 +4,31 @@ import math
 import pandas as pd
 import streamlit as st
 
-col1, col2, col3 = st.columns(3)
-col4, col5, col6 = st.columns(3)
-col7, col8, col9 = st.columns(3)
+import sys
+sys.path.append('bridge')
+import audit
 
-with col1:
-    st.header("A cat")
-    st.image("https://static.streamlit.io/examples/cat.jpg")
+d = audit.parse_sequence('bridge/SequenceFile.txt')
+cnvts = audit.parse_convention('bridge/Std American', d.keys())
+cnvts.append('STD')
+cnvts_list = []
+for cnvt in cnvts:
+    for line in d[cnvt]:        
+        cnvts_list.append(line)
 
-with col5:
-    st.header("A dog")
-    st.image("https://static.streamlit.io/examples/dog.jpg")
+bids = st.text_input("Standard american biding convention", "1D 2D")
+st.write(f"The meaning of {bids} is")
 
-with col9:
-    st.header("An owl")
-    st.image("https://static.streamlit.io/examples/owl.jpg")
-    
+for rule in audit.explain_bid(bids, cnvts_list):
+    st.write(rule)
 
-title = st.text_input("Movie title", "Life of Brian")
-st.write("The current movie title is", title)
+row = [st.columns(3), st.columns(3), st.columns(3)]
 
-for b in 'AK':
-    if st.button(b):
-        st.write(b)
-
-
-"""
-# Welcome to Streamlit!
-
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
-
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
-
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+for i in range(3):
+    for j in range(3):
+        with row[i][j]:
+            b = 'AKQJT98765432'[i*3+j]
+            if st.button(b):
+                st.write(b)
 
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
-
-    Point = namedtuple('Point', 'x y')
-    data = []
-
-    points_per_turn = total_points / num_turns
-
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
-
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
