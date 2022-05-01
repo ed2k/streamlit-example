@@ -4,11 +4,27 @@ import math
 import pandas as pd
 import streamlit as st
 
+col1, col2, col3 = st.columns(3)
+col4, col5, col6 = st.columns(3)
+col7, col8, col9 = st.columns(3)
+
+with col1:
+    st.header("A cat")
+    st.image("https://static.streamlit.io/examples/cat.jpg")
+
+with col5:
+    st.header("A dog")
+    st.image("https://static.streamlit.io/examples/dog.jpg")
+
+with col9:
+    st.header("An owl")
+    st.image("https://static.streamlit.io/examples/owl.jpg")
+    
 
 title = st.text_input("Movie title", "Life of Brian")
 st.write("The current movie title is", title)
 
-for b in 'AKQJT98765432':
+for b in 'AK':
     if st.button(b):
         st.write(b)
 
