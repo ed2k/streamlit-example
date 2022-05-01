@@ -2,9 +2,10 @@ altair
 pandas
 streamlit
 
-absl
+#absl
 numpy
+open_spiel
 haiku
 jax
-open_spiel
-pyspiel
+
+
