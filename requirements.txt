@@ -4,8 +4,10 @@ streamlit
 
 #absl
 numpy
-open_spiel
-#haiku
-jax
+open-spiel==1.0.2
+dm-haiku==0.0.5
+jax==0.2.26
+jaxlib==0.1.75
+
 
 

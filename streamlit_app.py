@@ -7,6 +7,10 @@ import streamlit as st
 import sys
 sys.path.append('bridge')
 import audit
+import nnet
+
+action = nnet.main([])
+st.write(action)
 
 d = audit.parse_sequence('bridge/SequenceFile.txt')
 cnvts = audit.parse_convention('bridge/Std American', d.keys())
