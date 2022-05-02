@@ -9,7 +9,9 @@ pandas = "*"
 streamlit = "*"
 numpy = "*"
 open-spiel = "1.0.2"
-jax = "*"
+jax = "0.2.26"
+dm-haiku = "0.0.5"
+jaxlib = "0.1.75"
 
 [dev-packages]
 
