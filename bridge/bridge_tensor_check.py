@@ -12,6 +12,11 @@ for ob in [a,b,c,d]:
     print()
 
 '''
+try to manually decode/encode open_spiel bridge auction tensor
+https://github.com/deepmind/open_spiel/blob/master/open_spiel/games/bridge/bridge_scoring.h
+https://github.com/deepmind/open_spiel/blob/master/open_spiel/games/bridge.h
+
+one example
 571
   0   4   6  15         433 439 441 444 448 453 454 461 462 467 473 478 483 
   0   4   6  13  51     434 437 438 440 447 450 457 468 469 470 472 479 480 
