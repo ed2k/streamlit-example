@@ -9,6 +9,14 @@ sys.path.append('bridge')
 import audit
 import nnet
 
+import test_open_spiel
+
+s, r = test_open_spiel.main([])
+for line in str(s).split('\n'):
+    line = line.replace(' ', '_')
+    st.write(line)
+st.write(r)
+
 action = nnet.main([])
 st.write(action)
 
