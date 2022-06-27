@@ -1,6 +1,4 @@
 from collections import namedtuple
-import altair as alt
-import math
 import pandas as pd
 import streamlit as st
 
@@ -12,10 +10,8 @@ import nnet
 import test_open_spiel
 
 s, r = test_open_spiel.main([])
-for line in str(s).split('\n'):
-    line = line.replace(' ', '_')
-    st.write(line)
-st.write(r)
+st.text(s)
+#st.text(r)
 
 action = nnet.main([])
 st.write(action)
@@ -31,8 +27,10 @@ for cnvt in cnvts:
 bids = st.text_input("Standard american biding convention", "1D 2D")
 st.write(f"The meaning of {bids} is")
 
+lines = []
 for rule in audit.explain_bid(bids, cnvts_list):
-    st.write(rule)
+    lines.append(rule)
+st.text('\n'.join(lines))
 
 row = [st.columns(3), st.columns(3), st.columns(3)]
 

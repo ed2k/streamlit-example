@@ -566,6 +566,12 @@ def bid_match(bid_seqs, compact_bid_line):
     last_bid = bid_seqs[-1]
     if not compact_bid_line.endswith(last_bid):
         return False
+    
+    if compact_bid_line.find('-'.join(bid_seqs)) >= 0:
+        if compact_bid_line.split('-')[0].find(bid_seqs[0]) >= 0:
+            return True
+    return False
+
     bid_pattern = '.*'.join(bid_seqs)
     if re.compile(f'^{bid_pattern}').match(compact_bid_line):
         return True
