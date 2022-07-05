@@ -2,10 +2,6 @@
 
 import os
 import pickle
-import re
-import time
-
-import numpy as np
 
 import haiku as hk
 import jax
@@ -13,14 +9,11 @@ import numpy as np
 
 import pyspiel
 
-# FLAGS = flags.FLAGS
-# flags.DEFINE_integer("num_deals", 6, "How many deals to play")
-# flags.DEFINE_integer("sleep", 0, "How many seconds to wait before next action")
-# flags.DEFINE_string("params_path", 'bridge', "directory path for trained model params-snapshot.pkl")
 
 # Make the network.
 NUM_ACTIONS = 38
 MIN_ACTION = 52
+RANK = '23456789TJQKA'
 
 def net_fn(x):
   """Haiku module for our network."""
@@ -59,10 +52,17 @@ def _run_once(state, bots, net, params):
   """Plays bots with each other, returns terminal utility for each player."""
   for bot in bots:
     bot.restart()
+  
+  cards = [['', '', '', ''], ['', '', '', ''], ['', '', '', ''], ['', '', '', '']]
+  i = 0
   while not state.is_terminal():
     if state.is_chance_node():
       outcomes, probs = zip(*state.chance_outcomes())
-      state.apply_action(np.random.choice(outcomes, p=probs))
+      card = np.random.choice(outcomes, p=probs)
+      #print(i, 'NESW'[i%4], 'CDHS'[card%4], RANK[card//4])
+      cards[i%4][card%4] += RANK[card//4]
+      state.apply_action(card)
+      i += 1
     else:
       action = state.legal_actions()[0]
       if action > 51:
@@ -78,6 +78,7 @@ def _run_once(state, bots, net, params):
         if action > 51:
           action = ai_action(state, net, params)
         state.apply_action(action)
+  print(cards)
   return state
 
 
@@ -101,50 +102,77 @@ def main(argv):
   return state, results
 
 
+def ob_to_str(ob):
+  """ open_spiel observation to string
+  current bidder always 0, last bidder always 3
+  hand ['46', '6TQ', '468', '359JK']
+  bids ['2:P', '3:1H', '0D:1H', '1R:1H']
+  """
+  hand = [''] * 4
+  bids = []
+  for i in range(len(ob)):
+      if ob[i] > 0.0:
+          if i > 431:
+                c = i - 432
+                print(f"{'CDHS'[c%4]}{RANK[c//4]}", end='')
+                hand[c%4] += RANK[c//4]
+          elif i > 11:  # 420 7 ranks 5 suits 4 seats 3 bids (bid, double redouble)
+                c = i - 12
+                bdr = (c%60)%12
+                b = f"{bdr%4}:{'1234567'[c//(5*4*3)]}{'CDHSN'[(c%60)//12]}"
+                if bdr > 3:
+                  b = f"{bdr%4}{'?DR'[bdr//4]}:{b[2:]}" # bdd // 4 > 0
+                print(f'{b} ', end='')
+                bids.append(b)
+          elif i > 7:
+                c = i - 8
+                print(f"{c%4}:P", end=' ') # who bid pass before opening bid
+                bids.append(f'{c%4}:P')
+          else:  # 
+                print(f'{i:3}', end=' ')
+  print(f' {len(ob)}')
+  return hand, bids
+
+
+def str_to_ob(hand, bids):
+  nob = [0.0] * 571
+  nob[0] = 1.0
+  nob[5] = 1.0
+  nob[7] = 1.0
+  for bid in bids:
+      b0 = bid.split(':')[0]
+      if len(b0) == 1:
+        b0 = int(b0)
+      elif b0[1] == 'D':
+        b0 = int(b0[0]) + 4
+      else:
+        b0 = int(b0[0]) + 8
+      b1 = bid.split(':')[1]
+      if b1 != 'P':
+          offset = 12 + b0 + dict(C=0,D=1,H=2,S=3,N=4)[b1[1]] * 12 + 60 * (int(b1[0])-1)
+      else:
+          offset = 8 + b0
+      nob[offset] = 1.0
+      #assert nob[offset] ==  ob[offset]
+  for suit in range(4):
+      for card in hand[suit]:
+          rank = RANK.find(card)
+          assert rank > -1 and rank < 14
+          offset = suit + rank * 4
+          nob[432+offset] = 1.0
+          # assert nob[432+offset] ==  ob[432+offset]
+  return nob
+
+
 def print_bid_translation(ob):
-    hand = [[],[],[],[]]
-    bids = []
-    for i in range(len(ob)):
-        if ob[i] > 0.0:
-            if i > 431:
-                  c = i - 432
-                  print(f"{'CDHS'[c%4]}{'23456789TJQKA'[c//4]}", end='')
-                  hand[c%4].append('23456789TJQKA'[c//4])
-            elif i > 11:  # 420 7 ranks 5 suits 4 seats 3 bids (bid, double redouble)
-                  c = i - 12
-                  print(f"{(c%60)%12}:{'1234567'[c//(5*4*3)]}{'CDHSN'[(c%60)//12]}", end=' ')
-                  bids.append(f"{(c%60)%12}:{'1234567'[c//(5*4*3)]}{'CDHSN'[(c%60)//12]}")
-            elif i > 7:
-                  c = i - 8
-                  print(f"{c%4}:P", end=' ') # who bid pass before opening bid
-                  bids.append(f'{c%4}:P')
-            else:  # 
-                  print(f'{i:3}', end=' ')
-    print()
+    hand, bids = ob_to_str(ob)
     print(hand)
     print(bids)
-    nob = [0.0] * 571
-    nob[0] = 1.0
-    nob[5] = 1.0
-    nob[7] = 1.0
-    for bid in bids:
-        b0 = int(bid.split(':')[0])
-        b1 = bid.split(':')[1]
-        if b1 != 'P':
-            offset = 12 + b0 + dict(C=0,D=1,H=2,S=3,N=4)[b1[1]] * 12 + 60 * (int(b1[0])-1)
-        else:
-            offset = 8 + b0
-        nob[offset] = 1.0
-        assert nob[offset] ==  ob[offset]
-    for suit in range(4):
-        for card in hand[suit]:
-            rank = '23456789TJQKA'.find(card)
-            assert rank > -1 and rank < 14
-            offset = suit + rank * 4
-            nob[432+offset] = 1.0
-            assert nob[432+offset] ==  ob[432+offset]
+
+    nob = str_to_ob(hand, bids)
     assert nob == ob
 
 
-# if __name__ == "__main__":
-#   main([])
+if __name__ == "__main__":
+  while True:
+    main([])
