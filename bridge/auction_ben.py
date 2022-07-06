@@ -24,9 +24,9 @@ def ben_to_str(auction):
     for bid in auction:
         if bid == 'PASS':
             bids.append('P')
-        elif bid == 'REDOUBLE':
+        elif bid == 'XX':
             bids.append('R')
-        elif bid == 'DOUBLE':
+        elif bid == 'X':
             bids.append('D')
         else:
             bids.append(bid)
@@ -36,9 +36,9 @@ def str_to_ben(bid):
     if bid == 'P':
         return 'PASS'
     elif bid == 'R':
-        return 'REDOUBLE'
+        return 'XX'
     elif bid == 'D':
-        return 'DOUBLE'
+        return 'X'
     else:
         return bid
 
@@ -55,7 +55,6 @@ class MyModel:
 
 class MyBot:
     def __init__(self, vuln, hand, model):
-        print(type(model), type(MyModel()))
         if type(model) == type(MyModel()):
             self.bot = model
             self.hand = hand
@@ -68,15 +67,12 @@ class MyBot:
         return self.bot.bit(auction)
 
     def _get_bid_candidates(self, auction):
-        print(auction)
         auction = ben_to_str(auction)
-        print(auction)
         m = self.bot
         hand = self.hand.split('.')
         net = m.net
         params = m.params
         bids = str_to_bids(auction)
-        print(hand)
         ob = str_to_ob(hand, bids)
         observation = np.array(ob, np.float32)
         policy = np.exp(net.apply(params, observation))
@@ -139,7 +135,7 @@ if __name__ == '__main__':
         parts = line.strip().split()
         dealer = parts[0]
         # for simplicity always assume North opening
-        deal = 'N'
+        dealer = 'N'
         vuln = parts[1]
         # open_spiel can only handle None
         vuln = 'None'
