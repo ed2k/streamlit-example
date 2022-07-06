@@ -1,12 +1,12 @@
 # pylint: enable=line-too-long
 
-import os
 import pickle
 
 import haiku as hk
 import jax
 import numpy as np
 
+from pathlib import Path
 import pyspiel
 
 
@@ -33,14 +33,77 @@ def net_fn(x):
 
 def load_model():
   net = hk.without_apply_rng(hk.transform(net_fn))
-  params = pickle.load(open(os.path.join('bridge', 'params-snapshot.pkl'), 'rb'))
+  f = Path(__file__).parent.joinpath('params-snapshot.pkl')
+  params = pickle.load(open(f, 'rb'))
   return net, params
+
+
+def bid_to_str(bid):
+    if bid > 51 and bid < 55:
+        return 'PDR'[bid-52]
+    b = bid - 55
+    return f"{b//5 + 1}{'CDHSN'[b%5]}"
+
+def str_to_bid(bid_s):
+    if bid_s in 'PDR':
+        return dict(P=52, D=53, R=54)[bid_s]
+    rank = int(bid_s[0])
+    suit = int(dict(C=0,D=1,H=2,S=3,N=4)[bid_s[1]])
+    return 55 + 5 * (rank-1) + suit
+
+
+def get_legal_actions(auction):
+    """ 52, 53, 54 := P, Dbl, RDbl
+    55 - 89 ?? 5-suits, 7 bid 1C, 1D, ... 1N, 2C, ... 7N
+    auction is serial of bid history in PDR[1-7]CDHSN str format
+    return list of open spiel number format 52-89
+    """
+    # return null if three pass after opening or four pass
+    if len(auction) > 3 and all([b == 'P' for b in auction[-4:]]):
+        return []
+    if len(auction) > 3 and all([b == 'P' for b in auction[-3:]]):
+        return []
+    legal_auction = [str_to_bid('P')]
+    if len(auction) == 0:
+        return legal_auction + list(range(55, 90))
+
+    i = len(auction) - 1
+    seen_dbl = -1
+    seen_rdbl = -1
+    while i >= 0:
+        if auction[i] not in 'PDR':
+            # can't double our own team
+            if (len(auction) - i) % 2 != 0 and seen_rdbl == -1 and seen_dbl == -1:
+                legal_auction += [str_to_bid('D')]
+            if seen_dbl != -1 and (len(auction) - seen_dbl) % 2 != 0:
+                legal_auction += [str_to_bid('R')]
+            return legal_auction + list(range(str_to_bid(auction[i])+1, 90))
+        elif auction[i] == 'D' and seen_rdbl == -1:
+            seen_dbl = i
+        elif auction[i] == 'R' and seen_dbl == -1:
+            seen_rdbl = i
+        i -= 1
+
+    return legal_auction + list(range(55, 90))
+
 
 def ai_action(state, net, params):
   observation = np.array(state.observation_tensor(), np.float32)
   policy = np.exp(net.apply(params, observation))
   probs_actions = [(p, a + MIN_ACTION) for a, p in enumerate(policy) if (a + MIN_ACTION) in state.legal_actions()]
   pred = max(probs_actions)[1]
+
+  _, bids = ob_to_str(state.observation_tensor())
+  a = get_legal_actions(bids_to_str(bids))
+  if a != state.legal_actions():
+    bs = bids_to_str(bids)
+    print(bids, bs)
+    for b in bs:
+        print(str_to_bid(b))
+    print(a)
+    print(state.legal_actions())
+  assert a ==  state.legal_actions()
+
   if pred not in state.legal_actions():
     print(pred)
     print(state.legal_actions())
@@ -48,11 +111,11 @@ def ai_action(state, net, params):
   return pred
 
 
-def _run_once(state, bots, net, params):
-  """Plays bots with each other, returns terminal utility for each player."""
-  for bot in bots:
-    bot.restart()
-  
+def _run_once(state, net, params):
+  """Plays bots with each other, returns terminal utility for each player.
+  [['2J', 'T74', 'A9K6', '6T47'], ['Q689T', '259A', '75', '92'], ['3A4', 'K6', '834', 'Q358K'], ['75K', 'Q83J', '2TJQ', 'JA']]
+  """
+
   cards = [['', '', '', ''], ['', '', '', ''], ['', '', '', ''], ['', '', '', '']]
   i = 0
   while not state.is_terminal():
@@ -84,13 +147,11 @@ def _run_once(state, bots, net, params):
 
 def main(argv):
   net, params = load_model()
-  bots = []
-
   results = []
   game = pyspiel.load_game("bridge(use_double_dummy_result=true,dealer_vul=true,non_dealer_vul=true)")
 
   for i_deal in range(1):
-    state = _run_once(game.new_initial_state(), bots, net, params)
+    state = _run_once(game.new_initial_state(), net, params)
     print("Deal #{}; final state:\n{}".format(i_deal, state))
     results.append(state.returns())
 
