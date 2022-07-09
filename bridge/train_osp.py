@@ -38,7 +38,7 @@ def _no_play_trajectory(line: str):
   # action for every bid of the auction, plus NUM_CARDS actions for the play
   # phase. Exceptionally, if all NUM_PLAYERS players Pass, there is no play
   # phase and the trajectory is just of length NUM_CARDS + NUM_PLAYERS.
-  if len(actions) == NUM_CARDS + NUM_PLAYERS:
+  if len(actions) < NUM_CARDS + NUM_PLAYERS + NUM_CARDS:
     return tuple(actions)
   else:
     return tuple(actions[:-NUM_CARDS])
