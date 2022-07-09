@@ -13,6 +13,17 @@ import pyspiel
 OptState = Any
 Params = Any
 
+import argparse
+
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('--resume_file')
+parser.add_argument('--data_path')            
+parser.add_argument('--save_path')
+
+args = parser.parse_args()
+print(args.resume_file)
+
+
 class class_FLAGS:
   iterations = 100000
   data_path = '.'
@@ -22,7 +33,7 @@ class class_FLAGS:
   eval_batch = 10000
   rng_seed = 42
   save_path = '.'
-  resume_file = ''
+  resume_file = args.resume_file
 
 FLAGS = class_FLAGS()
 GAME = pyspiel.load_game('bridge(use_double_dummy_result=false)')
