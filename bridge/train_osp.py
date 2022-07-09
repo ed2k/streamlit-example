@@ -19,13 +19,14 @@ parser = argparse.ArgumentParser(description='')
 parser.add_argument('--resume_file')
 parser.add_argument('--data_path')            
 parser.add_argument('--save_path')
+parser.add_argument('--iterations', type=int, default=100000)
 
 args = parser.parse_args()
-print(args.resume_file)
+print(args)
 
 
 class class_FLAGS:
-  iterations = 100000
+  iterations = args.iterations
   data_path = '.'
   eval_every = 10000
   num_examples = 3
