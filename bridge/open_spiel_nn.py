@@ -11,6 +11,7 @@ import pyspiel
 
 
 # Make the network.
+NN_SIZE = 1024
 NUM_ACTIONS = 38  # pass, double, redouble, 5x7
 MIN_ACTION = 52
 RANK = '23456789TJQKA'
@@ -22,13 +23,13 @@ rPXXX = dict(zip(range(52, 55), ['P', 'X', 'XX']))
 def net_fn(x):
   """Haiku module for our network."""
   net = hk.Sequential([
-      hk.Linear(1024),
+      hk.Linear(NN_SIZE),
       jax.nn.relu,
-      hk.Linear(1024),
+      hk.Linear(NN_SIZE),
       jax.nn.relu,
-      hk.Linear(1024),
+      hk.Linear(NN_SIZE),
       jax.nn.relu,
-      hk.Linear(1024),
+      hk.Linear(NN_SIZE),
       jax.nn.relu,
       hk.Linear(NUM_ACTIONS),
       jax.nn.log_softmax,
@@ -37,7 +38,7 @@ def net_fn(x):
 
 def load_model():
   net = hk.without_apply_rng(hk.transform(net_fn))
-  f = Path(__file__).parent.joinpath('params-snapshot.pkl')
+  f = Path(__file__).parent.joinpath(f'params-{NN_SIZE}.pkl')
   params = pickle.load(open(f, 'rb'))
   return net, params
 

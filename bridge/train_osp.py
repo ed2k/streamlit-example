@@ -10,6 +10,11 @@ import optax
 
 import pyspiel
 
+from pathlib import Path
+import sys
+sys.path.append(Path(__file__).parent)
+from open_spiel_nn import net_fn
+
 OptState = Any
 Params = Any
 
@@ -85,22 +90,6 @@ def one_hot(x, k):
   """Returns a one-hot encoding of `x` of size `k`."""
   return jnp.array(x[..., jnp.newaxis] == jnp.arange(k), dtype=np.float32)
 
-
-def net_fn(x):
-  """Haiku module for our network."""
-  net = hk.Sequential([
-      hk.Linear(1024),
-      jax.nn.relu,
-      hk.Linear(1024),
-      jax.nn.relu,
-      hk.Linear(1024),
-      jax.nn.relu,
-      hk.Linear(1024),
-      jax.nn.relu,
-      hk.Linear(NUM_ACTIONS),
-      jax.nn.log_softmax,
-  ])
-  return net(x)
 
 
 def main(argv):
