@@ -22,6 +22,7 @@ class class_FLAGS:
   eval_batch = 10000
   rng_seed = 42
   save_path = '.'
+  resume_file = ''
 
 FLAGS = class_FLAGS()
 GAME = pyspiel.load_game('bridge(use_double_dummy_result=false)')
@@ -170,6 +171,9 @@ def main(argv):
   rng = jax.random.PRNGKey(FLAGS.rng_seed)  # seed used for network weights
   inputs, unused_targets = next(train)
   params = net.init(rng, inputs)
+  if FLAGS.resume_file:
+    print('Resuming from', FLAGS.resume_file)
+    params = pickle.load(open(FLAGS.resume_file, 'rb'))
   #params = pickle.load(open('params-snapshot.pkl', 'rb'))
   opt_state = opt.init(params)
 
