@@ -297,7 +297,7 @@ def str_to_ob(hand, bids):
   return nob
 
 
-def data_ben_to_osp(cards, bids):
+def data_ben_to_osp(cards_line, bids_line):
   """
   cards: K76.965.Q63.9854 AT83.AJ.J9754.73 Q42.84.T2.AKQT62 J95.KQT732.AK8.J
   [N, E, S, W], seat: S.H.D.C
@@ -305,6 +305,14 @@ def data_ben_to_osp(cards, bids):
   dealer vulnarability [P|X|XX|...]* P P P
   open spiel card
   """
+  cards = ['', '', '', '']
+  bids = bids_line.split()
+  # osp can only handle N, vul:None, need to rotate seats
+  ben_cards = cards_line.split()
+  rot_seat = dict(zip('NESW', [0, -1, -2, -3]))
+  n = bids[0]
+  for i in range(4):
+    cards[(i+rot_seat[n])%4] = ben_cards[i]
   result = []
   four_osp = [[], [], [], []]
   for p in range(4):
@@ -317,7 +325,7 @@ def data_ben_to_osp(cards, bids):
     for p in range(4):
       result.append(four_osp[p][i])
   
-  for bid in bids:
+  for bid in bids[2:]:
     if bid in ['P', 'X', 'XX']:
       result.append(f"{PXXX[bid]}")
     else:
