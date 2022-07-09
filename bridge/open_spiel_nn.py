@@ -11,9 +11,13 @@ import pyspiel
 
 
 # Make the network.
-NUM_ACTIONS = 38
+NUM_ACTIONS = 38  # pass, double, redouble, 5x7
 MIN_ACTION = 52
 RANK = '23456789TJQKA'
+rRANK = dict(zip(RANK, range(len(RANK))))
+PDR = dict(zip('PDR', range(3)))
+PXXX = dict(zip(['P', 'X', 'XX'], range(52, 55)))
+rPXXX = dict(zip(range(52, 55), ['P', 'X', 'XX']))
 
 def net_fn(x):
   """Haiku module for our network."""
@@ -286,11 +290,69 @@ def str_to_ob(hand, bids):
       for card in hand[suit]:
           rank = RANK.find(card)
           assert rank > -1 and rank < 14
-          offset = suit + rank * 4
+          # ben uses SHDC 0-3, osp uses CDHS in hand/card
+          offset = (3-suit) + rank * 4
           nob[432+offset] = 1.0
           # assert nob[432+offset] ==  ob[432+offset]
   return nob
 
+
+def data_ben_to_osp(cards, bids):
+  """
+  cards: K76.965.Q63.9854 AT83.AJ.J9754.73 Q42.84.T2.AKQT62 J95.KQT732.AK8.J
+  [N, E, S, W], seat: S.H.D.C
+  bids: N None P P 1C 1H P 1N P 2N P 3D P 3H P 4H P P P
+  dealer vulnarability [P|X|XX|...]* P P P
+  open spiel card
+  """
+  result = []
+  four_osp = [[], [], [], []]
+  for p in range(4):
+    suits = cards[p].split('.')
+    for s in range(4):
+      for c in suits[s]:
+        osp_code = rRANK[c] * 4 + (3-s)
+        four_osp[p].append(osp_code)
+  for i in range(13):
+    for p in range(4):
+      result.append(four_osp[p][i])
+  
+  for bid in bids:
+    if bid in ['P', 'X', 'XX']:
+      result.append(f"{PXXX[bid]}")
+    else:
+      r = int(bid[0]) - 1
+      s = dict(zip('CDHSN', range(5)))[bid[1]]
+      result.append(55+r*5+s)
+  return ' '.join([str(n) for n in result])
+
+
+def data_osp_to_ben(osp_code):
+  """a open spiel number from 0-89
+  0-51 cards, C2 - SA
+  52, 53, 54 := P, Dbl, RDbl
+  55 - 89 ?? 5-suits, 7 bid 1C, 1D, ... 1N, 2C, ... 7N
+  """
+  if osp_code < 52:
+    return f"{'CDHS'[osp_code%4]}{RANK[osp_code//4]}"
+  if osp_code < 55:
+    return f"{rPXXX[osp_code]}"
+  c = osp_code - 55
+  return f"{c//5+1}{'CDHSN'[c%5]}"
+
+def convert_osp_line(line):
+  r = []
+  for c in line.split():
+    r.append(data_osp_to_ben(int(c)))
+
+  SHDC = dict(zip('SHDC', range(4)))
+  cards = [['','','',''], ['','','',''], ['','','',''], ['','','','']]
+  for i in range(52):
+    c = r[i]
+    cards[i%4][SHDC[c[0]]]+=c[1]
+  if len(r) > (52+52+3):
+    return cards, r[52:-52]
+  return cards, r[52:]
 
 def print_bid_translation(ob):
     hand, bids = ob_to_str(ob)
@@ -302,5 +364,22 @@ def print_bid_translation(ob):
 
 
 if __name__ == "__main__":
-  while True:
+  a = "K76.965.Q63.9854 AT83.AJ.J9754.73 Q42.84.T2.AKQT62 J95.KQT732.AK8.J".split()
+  b = "P P 1C 1H P 1N P 2N P 3D P 3H P 4H P P P".split()
+  osp = data_ben_to_osp(a, b).split()
+  osp = '27 46 36 43 18 22 0 20 24 2 40 41 28 16 21 10 42 32 48 47 13 17 3 5 12 25 34 8 29 38 23 4 30 26 35 19 9 44 7 51 14 1 45 15 49 33 11 50 39 31 6 37 52 52 58 59 52 61 52 62 52 64 52 52 52 39 31 3 47 41 13 1 45 21 5 49 17 27 16 7 51 50 18 2 6 15 12 22 23 48 4 24 32 0 20 28 44 25 34 37 9 43 14 26 11 10 30 46 36 33 40 8 29 38 35 19 42'
+  print(osp)
+  r = []
+  for c in osp.split():
+    r.append(data_osp_to_ben(int(c)))
+  print(r[52:-52])
+  SHDC = dict(zip('SHDC', range(4)))
+  cards = [['','','',''], ['','','',''], ['','','',''], ['','','','']]
+  for i in range(52):
+    c = r[i]
+    cards[i%4][SHDC[c[0]]]+=c[1]
+  print(cards)
+
+  
+  while False:
     main([])
