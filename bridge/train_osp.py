@@ -168,14 +168,14 @@ def main(argv):
   test = batch(
       make_dataset(os.path.join(FLAGS.data_path, 'test.txt')), FLAGS.eval_batch)
 
-  # Initialize network and optimiser.
-  rng = jax.random.PRNGKey(FLAGS.rng_seed)  # seed used for network weights
-  inputs, unused_targets = next(train)
-  params = net.init(rng, inputs)
   if FLAGS.resume_file:
     print('Resuming from', FLAGS.resume_file)
     params = pickle.load(open(FLAGS.resume_file, 'rb'))
-  #params = pickle.load(open('params-snapshot.pkl', 'rb'))
+  else:
+    # Initialize network and optimiser.
+    rng = jax.random.PRNGKey(FLAGS.rng_seed)  # seed used for network weights
+    inputs, unused_targets = next(train)
+    params = net.init(rng, inputs)
   opt_state = opt.init(params)
 
   # Train/eval loop.

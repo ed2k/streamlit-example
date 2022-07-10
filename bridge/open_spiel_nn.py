@@ -300,7 +300,6 @@ def str_to_ob(hand, bids):
 
 def rotate_seat(seat, hand):
   cards = ['', '', '', '']
-  bids = bids_line.split()
   # osp can only handle N, vul:None, need to rotate seats
   ben_cards = hand
   rot_seat = dict(zip('NESW', [0, -1, -2, -3]))
