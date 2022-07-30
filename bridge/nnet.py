@@ -32,7 +32,7 @@ def net_fn(x):
 
 def load_model():
   net = hk.without_apply_rng(hk.transform(net_fn))
-  params = pickle.load(open(os.path.join('bridge', 'params-snapshot.pkl'), 'rb'))
+  params = pickle.load(open(os.path.join('bridge', 'params-1024.pkl'), 'rb'))
   return net, params
 
 def ai_action(state, net, params):
