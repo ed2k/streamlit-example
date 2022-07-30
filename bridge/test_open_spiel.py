@@ -1,10 +1,5 @@
 # pylint: enable=line-too-long
 
-import os
-import pickle
-
-import haiku as hk
-import jax
 import numpy as np
 
 from open_spiel_nn import load_model, ob_to_str, str_to_ob
@@ -89,7 +84,8 @@ def print_bid_translation(ob):
     print(bids)
 
     nob = str_to_ob(hand, bids)
-    assert nob == ob
+    if nob != ob:
+      print(nob, ob)
 
 
 if __name__ == "__main__":
